@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块 - 陈思丞</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="auth.js"></script>
+    <script src="storage.js"></script>
+    <script src="audio.js"></script>
+</head>
+<body>
+    <div class="game-wrapper">
+        <!-- 左侧面板 -->
+        <div class="left-panel">
+            <div class="player-info">
+                <div class="avatar-section">
+                    <div class="avatar">🎮</div>
+                    <div>
+                        <div class="player-name">玩家</div>
+                        <div id="playerLevel" class="level-badge">Lv.1</div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div id="totalScore" class="stat-value">0</div>
+                        <div class="stat-label">总积分</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="coinsValue" class="stat-value">0</div>
+                        <div class="stat-label">金币</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="highScore" class="stat-value">0</div>
+                        <div class="stat-label">最高分</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="gamesPlayed" class="stat-value">0</div>
+                        <div class="stat-label">游戏场次</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="next-piece-panel">
+                <div class="panel-title">下一个</div>
+                <div class="next-preview">
+                    <canvas id="nextCanvas" width="120" height="100"></canvas>
+                </div>
+            </div>
+
+            <div class="hold-panel">
+                <div class="panel-title">保留</div>
+                <div class="hold-preview">
+                    <canvas id="holdCanvas" width="120" height="100"></canvas>
+                </div>
+            </div>
+
+            <div class="items-panel">
+                <div class="panel-title">道具</div>
+                <div class="items-grid">
+                    <button id="reviveBtn" class="item-btn" onclick="useRevive()" disabled>
+                        <div class="item-icon">💖</div>
+                        <div>复活卡</div>
+                        <div id="reviveCount" class="item-count">0</div>
+                    </button>
+                    <button id="destroyBtn" class="item-btn" onclick="useDestroy()" disabled>
+                        <div class="item-icon">💥</div>
+                        <div>销毁卡</div>
+                        <div id="destroyCount" class="item-count">0</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间游戏区域 -->
+        <div class="main-area">
+            <div class="game-header">
+                <h1 class="game-title">🎯 俄罗斯方块</h1>
+            </div>
+            
+            <div class="game-board-container">
+                <canvas id="gameCanvas"></canvas>
+                
+                <div id="startOverlay" class="start-overlay">
+                    <button class="start-btn" onclick="startGame()">开始游戏</button>
+                    <div style="margin-top: 20px; color: #888; font-size: 14px;">
+                        按 Enter 或 空格键 快速开始
+                    </div>
+                </div>
+                
+                <div id="gameOverOverlay" class="game-over-overlay">
+                    <div class="game-over-title">游戏结束</div>
+                    <div class="final-score">得分: <span id="finalScore">0</span></div>
+                    <div style="display: flex; gap: 15px;">
+                        <button class="btn btn-primary" onclick="restartGame()">再来一局</button>
+                        <button class="btn btn-secondary" onclick="tryRevive()">使用复活卡</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <div class="right-panel">
+            <div class="score-panel">
+                <div class="score-display">
+                    <div class="score-label">得分</div>
+                    <div id="scoreValue" class="score-value">0</div>
+                </div>
+                <div class="score-display" style="margin-top: 20px;">
+                    <div class="score-label">消除行数</div>
+                    <div id="linesValue" class="lines-value">0</div>
+                </div>
+                <div class="score-display" style="margin-top: 20px;">
+                    <div class="score-label">等级</div>
+                    <div id="levelValue" class="lines-value">1</div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="panel-title">操作说明</div>
+                <div class="controls-grid">
+                    <div class="control-item">
+                        <div class="control-key">
+                            <span class="key">←</span>
+                            <span class="key">A</span>
+                        </div>
+                        <div class="control-desc">左移</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">
+                            <span class="key">→</span>
+                            <span class="key">D</span>
+                        </div>
+                        <div class="control-desc">右移</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">
+                            <span class="key">↓</span>
+                            <span class="key">S</span>
+                        </div>
+                        <div class="control-desc">加速下落</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">
+                            <span class="key">↑</span>
+                            <span class="key">W</span>
+                        </div>
+                        <div class="control-desc">旋转</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">
+                            <span class="key">空格</span>
+                        </div>
+                        <div class="control-desc">硬降</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">
+                            <span class="key">SHIFT</span>
+                        </div>
+                        <div class="control-desc">保留</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">
+                            <span class="key">P</span>
+                        </div>
+                        <div class="control-desc">暂停</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="shop-btn" onclick="openShop()">
+                🏪 积分商店
+            </button>
+
+            <button class="settings-btn" onclick="openSettings()">
+                ⚙️ 设置
+            </button>
+        </div>
+    </div>
+
+    <!-- 移动端触摸控制 -->
+    <div class="mobile-controls" id="mobileControls">
+        <div class="mobile-row">
+            <button class="mobile-btn rotate-btn" id="rotateBtn">
+                <span>↻</span>
+            </button>
+            <button class="mobile-btn hold-btn" id="holdBtn">
+                <span>⇄</span>
+            </button>
+        </div>
+        <div class="mobile-row main-row">
+            <button class="mobile-btn left-btn" id="leftBtn">
+                <span>◀</span>
+            </button>
+            <button class="mobile-btn drop-btn" id="dropBtn">
+                <span>▼</span>
+            </button>
+            <button class="mobile-btn right-btn" id="rightBtn">
+                <span>▶</span>
+            </button>
+        </div>
+        <div class="mobile-row">
+            <button class="mobile-btn hard-drop-btn" id="hardDropBtn">
+                <span>⏬</span>
+            </button>
+            <button class="mobile-btn pause-btn" id="pauseBtn">
+                <span>⏸</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 连杀动画 -->
+    <div id="killStreak" class="kill-streak"></div>
+
+    <!-- 升级动画 -->
+    <div id="levelUpOverlay" class="level-up-overlay">
+        <div class="level-up-content">
+            <div class="level-up-badge">
+                <span id="newLevel">Lv.1</span>
+            </div>
+            <div class="level-up-text">🎉 升级啦！</div>
+            <div id="levelReward" class="level-up-reward">奖励 50 积分</div>
+        </div>
+    </div>
+
+    <!-- 商店弹窗 -->
+    <div id="shopModal" class="shop-modal">
+        <div class="shop-content">
+            <div class="shop-header">
+                <div class="shop-title">🏪 积分商店</div>
+                <button class="shop-close" onclick="closeShop()">×</button>
+            </div>
+            <div class="shop-items">
+                <div class="shop-item">
+                    <div class="shop-item-icon">💖</div>
+                    <div class="shop-item-name">复活卡</div>
+                    <div class="shop-item-desc">游戏结束后可复活继续</div>
+                    <div class="shop-item-price">💰 100</div>
+                    <button class="purchase-btn" onclick="purchaseItem('revive', 100)">购买</button>
+                </div>
+                <div class="shop-item">
+                    <div class="shop-item-icon">💥</div>
+                    <div class="shop-item-name">销毁卡</div>
+                    <div class="shop-item-desc">清除底部3行</div>
+                    <div class="shop-item-price">💰 150</div>
+                    <button class="purchase-btn" onclick="purchaseItem('destroy', 150)">购买</button>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #888;">
+                当前金币: <span id="shopCoins" style="color: #f59e0b; font-weight: bold;">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div id="settingsModal" class="settings-modal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <div class="settings-title">⚙️ 设置</div>
+                <button class="settings-close" onclick="closeSettings()">×</button>
+            </div>
+            <div class="settings-body">
+                <div class="setting-item">
+                    <div class="setting-label">音效</div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="soundToggle" onchange="toggleSound()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">背景音乐</div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="musicToggle" onchange="toggleMusic()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item volume-item" id="volumeSetting" style="display: none;">
+                    <div class="setting-label">音量</div>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="50" oninput="setVolume(this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 开发者面板按钮 -->
+    <button id="devPanelBtn" class="dev-panel-btn" onclick="toggleDevPanel()" title="开发者面板">⚙️</button>
+
+    <!-- 开发者面板 -->
+    <div id="devModal" class="dev-modal">
+        <div class="dev-content">
+            <div class="dev-title">⚙️ 开发者面板</div>
+            
+            <div class="dev-section">
+                <div class="dev-section-title">📊 数据编辑</div>
+                <div class="dev-form-group">
+                    <label class="dev-label">总积分</label>
+                    <input type="number" id="devTotalScore" class="dev-input" value="0">
+                </div>
+                
+                <div class="dev-form-group">
+                    <label class="dev-label">等级</label>
+                    <input type="number" id="devLevel" class="dev-input" value="1" min="1">
+                </div>
+                
+                <div class="dev-form-group">
+                    <label class="dev-label">金币</label>
+                    <input type="number" id="devCoins" class="dev-input" value="0">
+                </div>
+                
+                <div class="dev-form-group">
+                    <label class="dev-label">复活卡数量</label>
+                    <input type="number" id="devRevive" class="dev-input" value="0">
+                </div>
+                
+                <div class="dev-form-group">
+                    <label class="dev-label">销毁卡数量</label>
+                    <input type="number" id="devDestroy" class="dev-input" value="0">
+                </div>
+                
+                <div class="dev-form-group">
+                    <label class="dev-label">
+                        <input type="checkbox" id="devModeToggle"> 启用开发者模式
+                    </label>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        开发者模式下道具无限使用
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dev-section">
+                <div class="dev-section-title">🔐 特殊模式设置</div>
+                <div class="dev-form-group">
+                    <label class="dev-label">触发序列</label>
+                    <input type="text" id="devTriggerSequence" class="dev-input" placeholder="如: 1005" maxlength="10">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        输入此序列触发密码框
+                    </div>
+                </div>
+                
+                <div class="dev-form-group">
+                    <label class="dev-label">特殊模式密码</label>
+                    <input type="text" id="devSpecialPassword" class="dev-input" placeholder="输入新密码" maxlength="20">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        验证此密码激活特殊模式
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dev-actions">
+                <button class="dev-btn secondary" onclick="closeDevPanel()">取消</button>
+                <button class="dev-btn primary" onclick="saveDevSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        function startGame() {
+            document.getElementById('startOverlay').classList.add('hidden');
+            TetrisGame.start();
+        }
+
+        function restartGame() {
+            TetrisGame.restart();
+        }
+
+        function tryRevive() {
+            if (TetrisGame.useRevive()) {
+                AudioManager.playSuccess();
+            } else {
+                AudioManager.playError();
+                alert('没有复活卡了！去商店购买吧');
+            }
+        }
+
+        function useRevive() {
+            if (TetrisGame.isPlaying && !TetrisGame.gameOver) {
+                alert('游戏进行中无法使用复活卡！');
+                return;
+            }
+            tryRevive();
+        }
+
+        function useDestroy() {
+            TetrisGame.useDestroy();
+        }
+
+        function openShop() {
+            document.getElementById('shopCoins').textContent = GameStorage.data.coins;
+            document.getElementById('shopModal').classList.add('show');
+            AudioManager.playClick();
+        }
+
+        function closeShop() {
+            document.getElementById('shopModal').classList.remove('show');
+            AudioManager.playClick();
+        }
+
+        function openSettings() {
+            document.getElementById('soundToggle').checked = AudioManager.soundEnabled;
+            document.getElementById('musicToggle').checked = AudioManager.musicEnabled;
+            document.getElementById('settingsModal').classList.add('show');
+            AudioManager.playClick();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('show');
+            AudioManager.playClick();
+        }
+
+        function toggleSound() {
+            AudioManager.soundEnabled = document.getElementById('soundToggle').checked;
+            localStorage.setItem('soundEnabled', AudioManager.soundEnabled);
+            if (AudioManager.soundEnabled) {
+                AudioManager.playClick();
+            }
+        }
+
+        function toggleMusic() {
+            AudioManager.musicEnabled = document.getElementById('musicToggle').checked;
+            localStorage.setItem('musicEnabled', AudioManager.musicEnabled);
+            if (AudioManager.musicEnabled) {
+                AudioManager.startMusic();
+            } else {
+                AudioManager.stopMusic();
+            }
+        }
+
+        function setVolume(value) {
+            AudioManager.setVolume(value / 100);
+        }
+
+        function purchaseItem(itemId, price) {
+            if (GameStorage.purchaseItem(itemId, price)) {
+                AudioManager.playPurchase();
+                TetrisGame.updateUI();
+                document.getElementById('shopCoins').textContent = GameStorage.data.coins;
+                
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #10b981;
+                    color: white;
+                    padding: 15px 30px;
+                    border-radius: 10px;
+                    z-index: 10000;
+                    animation: slideDown 0.3s ease-out;
+                `;
+                notification.textContent = '✅ 购买成功！';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 2000);
+            } else {
+                AudioManager.playError();
+                alert('金币不足！');
+            }
+        }
+
+        function toggleDevPanel() {
+            const modal = document.getElementById('devModal');
+            if (modal.classList.contains('show')) {
+                closeDevPanel();
+            } else {
+                const data = GameStorage.getData();
+                document.getElementById('devTotalScore').value = data.totalScore;
+                document.getElementById('devLevel').value = data.level;
+                document.getElementById('devCoins').value = data.coins;
+                document.getElementById('devRevive').value = data.reviveCards;
+                document.getElementById('devDestroy').value = data.destroyCards;
+                document.getElementById('devModeToggle').checked = GameStorage.isDevMode;
+                document.getElementById('devTriggerSequence').value = GameAuth.getTriggerSequence();
+                document.getElementById('devSpecialPassword').value = GameAuth.getPassword();
+                modal.classList.add('show');
+            }
+            AudioManager.playClick();
+        }
+
+        function closeDevPanel() {
+            document.getElementById('devModal').classList.remove('show');
+        }
+
+        function saveDevSettings() {
+            const totalScore = parseInt(document.getElementById('devTotalScore').value) || 0;
+            const level = parseInt(document.getElementById('devLevel').value) || 1;
+            const coins = parseInt(document.getElementById('devCoins').value) || 0;
+            const revive = parseInt(document.getElementById('devRevive').value) || 0;
+            const destroy = parseInt(document.getElementById('devDestroy').value) || 0;
+            const isDevMode = document.getElementById('devModeToggle').checked;
+            const triggerSequence = document.getElementById('devTriggerSequence').value.trim();
+            const specialPassword = document.getElementById('devSpecialPassword').value.trim();
+
+            GameStorage.editData({
+                totalScore,
+                level: Math.max(1, level),
+                coins,
+                reviveCards: revive,
+                destroyCards: destroy
+            });
+            GameStorage.setDevMode(isDevMode);
+
+            if (triggerSequence && triggerSequence.length >= 3) {
+                GameAuth.setTriggerSequence(triggerSequence);
+            }
+            if (specialPassword && specialPassword.length >= 3) {
+                GameAuth.setPassword(specialPassword);
+            }
+
+            TetrisGame.updateUI();
+            closeDevPanel();
+            AudioManager.playSuccess();
+
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #10b981;
+                color: white;
+                padding: 15px 30px;
+                border-radius: 10px;
+                z-index: 10000;
+            `;
+            notification.textContent = '✅ 设置已保存！';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2000);
+        }
+
+        TetrisGame.init('gameCanvas');
+        TetrisGame.updateUI();
+    </script>
+</body>
+</html>
